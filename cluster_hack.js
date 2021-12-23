@@ -125,7 +125,8 @@ function getHackStates(ns, servers, hackables) {
 function getHackable(ns, servers) {
     return [...servers.values()].filter(server => ns.getServerMaxMoney(server) > 100000
         && ns.getServerMoneyAvailable(server) > 1000
-        && ns.getServerGrowth(server))
+        && ns.getServerGrowth(server)
+        && ns.getServerRequiredHackingLevel(server) <= ns.getHackingLevel())
         .sort((a, b) => ns.getServerRequiredHackingLevel(a) - ns.getServerRequiredHackingLevel(b))
 }
 
@@ -171,8 +172,7 @@ function scanAndHack(ns) {
             portOpened++;
         }
 
-        if (ns.getServerNumPortsRequired(server) <= portOpened
-            && ns.getServerRequiredHackingLevel(server) < ns.getHackingLevel()) {
+        if (ns.getServerNumPortsRequired(server) <= portOpened) {
             ns.nuke(server);
             accesibleServers.add(server);
         }
