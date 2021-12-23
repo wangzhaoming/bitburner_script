@@ -148,6 +148,11 @@ function scanAndHack(ns) {
     scanAll("home", servers, ns);
     const accesibleServers = new Set();
     for (let server of servers) {
+        if (ns.hasRootAccess(server)) {
+            accesibleServers.add(server);
+            continue;
+        }
+        
         var portOpened = 0;
         if (ns.fileExists("BruteSSH.exe")) {
             ns.brutessh(server);
@@ -171,7 +176,7 @@ function scanAndHack(ns) {
             ns.sqlinject(server);
             portOpened++;
         }
-
+        
         if (ns.getServerNumPortsRequired(server) <= portOpened) {
             ns.nuke(server);
             accesibleServers.add(server);
