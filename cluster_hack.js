@@ -33,7 +33,7 @@ function manageAndHack(ns, freeRams, hackables, hackstates) {
             var threads = Math.floor(secDiff * 20) - hackstates.get(target).weaken;
             if (threads > 0) {
                 if (!findPlaceToRun(ns, "weaken.js", threads, freeRams, target)) {
-                    return
+                    continue;
                 }
             }
 
@@ -45,7 +45,7 @@ function manageAndHack(ns, freeRams, hackables, hackstates) {
                 - hackstates.get(target).grow;
             if (threads > 0) {
                 if (!findPlaceToRun(ns, "grow.js", threads, freeRams, target)) {
-                    return;
+                    continue;
                 }
             }
         }
@@ -56,7 +56,7 @@ function manageAndHack(ns, freeRams, hackables, hackstates) {
             if (threads > 0) {
                 // hack to money percent = 70
                 if (!findPlaceToRun(ns, "hack.js", threads, freeRams, target)) {
-                    return;
+                    continue;
                 }
             }
         }
