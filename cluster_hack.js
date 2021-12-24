@@ -9,15 +9,24 @@ export async function main(ns) {
             await ns.scp("grow.js", "home", server)
             // await ns.installBackdoor(server)
         }
-        ns.tprint(`servers:${[...servers.values()]}`)
+        print(ns, `servers:${[...servers.values()]}`, ns.args[0])
         var freeRams = getFreeRam(ns, servers);
-        // ns.tprint(`freeRams:${freeRams.map(value => JSON.stringify(value))}`)
+        // print(ns, `freeRams:${freeRams.map(value => JSON.stringify(value))}`, ns.args[0])
         var hackables = getHackable(ns, servers);
-        // ns.tprint(`hackable:${[...hackables.values()]}`)
+        // print(ns, `hackable:${[...hackables.values()]}`, ns.args[0])
         var hackstates = getHackStates(ns, servers, hackables)
-        ns.tprint(`hackstates:${[...hackstates.entries()].map((v, _i) => `${v[0]}:{${JSON.stringify(v[1])}}\n`)}`)
+        print(ns, `hackstates:${[...hackstates.entries()].map((v, _i) => `${v[0]}:{${JSON.stringify(v[1])}}\n`)}`, ns.args[0])
         manageAndHack(ns, freeRams, hackables, hackstates)
         await ns.sleep(10000)
+    }
+}
+
+function print(ns, s, t) {
+    if (t) {
+        ns.tprint(s)
+    }
+    else {
+        ns.print(s)
     }
 }
 
