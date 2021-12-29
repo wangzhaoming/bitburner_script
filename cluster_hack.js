@@ -17,7 +17,7 @@ export async function main(ns) {
         var hackstates = getHackStates(ns, servers, hackables)
         _print(ns, `hackstates:${[...hackstates.entries()].map((v, _i) => `${v[0]}:{${JSON.stringify(v[1])}}\n`)}`, ns.args[0])
         manageAndHack(ns, freeRams, hackables, hackstates)
-        await ns.sleep(10000)
+        await ns.sleep(1000)
     }
 }
 
@@ -39,7 +39,7 @@ function manageAndHack(ns, freeRams, hackables, hackstates) {
 
         var secDiff = sec - minSec
         if (secDiff > 0) {
-            var threads = Math.floor(secDiff * 20) - hackstates.get(target).weaken;
+            var threads = Math.ceil(secDiff * 20) - hackstates.get(target).weaken;
             if (threads > 0) {
                 if (!findPlaceToRun(ns, "weaken.js", threads, freeRams, target)) {
                     continue;
@@ -50,7 +50,7 @@ function manageAndHack(ns, freeRams, hackables, hackstates) {
 
         var moneyPercent = money / maxMoney * 100
         if (moneyPercent < 90) {
-            var threads = Math.floor(ns.growthAnalyze(target, 100 / moneyPercent))
+            var threads = Math.ceil(ns.growthAnalyze(target, 100 / moneyPercent))
                 - hackstates.get(target).grow;
             if (threads > 0) {
                 if (!findPlaceToRun(ns, "grow.js", threads, freeRams, target)) {
@@ -59,8 +59,8 @@ function manageAndHack(ns, freeRams, hackables, hackstates) {
             }
         }
 
-        if (moneyPercent > 75 && secDiff < 50) {
-            var threads = Math.floor(ns.hackAnalyzeThreads(target, money - (0.4 * maxMoney)))
+        if (moneyPercent > 90 && secDiff < 20) {
+            var threads = Math.ceil(ns.hackAnalyzeThreads(target, money - (0.4 * maxMoney)))
                 - hackstates.get(target).hack
             if (threads > 0) {
                 // hack to money percent = 70
@@ -77,34 +77,32 @@ function manageAndHack(ns, freeRams, hackables, hackstates) {
 function findPlaceToRun(ns, script, threads, freeRams, target) {
     let scriptRam = ns.getScriptRam(script)
     var remaingThread = threads;
+    let i = 0;
     while (true) {
-        if (freeRams.length === 0) {
+        if (freeRams.length === i) {
             return false;
         }
-        var host = freeRams[0].host;
-        var ram = freeRams[0].freeRam;
+        var host = freeRams[i].host;
+        var ram = freeRams[i].freeRam;
 
         if (ram < scriptRam) {
-            freeRams.shift()
+            i++;
         } else if (ram < scriptRam * remaingThread) {
             const threadForThisHost = Math.floor(ram / scriptRam)
             // ns.tprint(`executing ${script} on ${host} with ${threadForThisHost} threads, targeting ${target}`)
 
-            if (ns.exec(script, host, threadForThisHost, target) === 0) {
-                ns.kill(script, host, target)
-                ns.exec(script, host, threadForThisHost, target)
+            if (ns.exec(script, host, threadForThisHost, target) !== 0) {
+                remaingThread -= threadForThisHost
+                freeRams[i].freeRam -= scriptRam * threadForThisHost;
             }
-            remaingThread -= threadForThisHost
-            freeRams.shift()
+            i++;
         } else {
             // ns.tprint(`executing ${script} on ${host} with ${remaingThread} threads, targeting ${target}`)
-            if (ns.exec(script, host, remaingThread, target) === 0) {
-                ns.kill(script, host, target)
-                ns.exec(script, host, remaingThread, target)
+            if (ns.exec(script, host, remaingThread, target) !== 0) {
+                freeRams[i].freeRam -= scriptRam * remaingThread;
+                return true;
             }
-            freeRams[0].freeRam -= scriptRam * remaingThread
-
-            return true;
+            i++;
         }
     }
 
@@ -156,12 +154,13 @@ function scanAndHack(ns) {
     let servers = new Set(["home"]);
     scanAll("home", servers, ns);
     const accesibleServers = new Set();
+    accesibleServers.add("home");
     for (let server of servers) {
         if (ns.hasRootAccess(server)) {
             accesibleServers.add(server);
             continue;
         }
-        
+
         var portOpened = 0;
         if (ns.fileExists("BruteSSH.exe")) {
             ns.brutessh(server);
@@ -185,13 +184,13 @@ function scanAndHack(ns) {
             ns.sqlinject(server);
             portOpened++;
         }
-        
+
         if (ns.getServerNumPortsRequired(server) <= portOpened) {
             ns.nuke(server);
             accesibleServers.add(server);
         }
     }
-    return accesibleServers.add("home");
+    return accesibleServers;
 }
 
 function scanAll(host, servers, ns) {
